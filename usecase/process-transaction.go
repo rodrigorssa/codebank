@@ -1,19 +1,23 @@
 package usecase
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/rodrigorssa/codebank/domain"
 	"github.com/rodrigorssa/codebank/dto"
+	"github.com/rodrigorssa/codebank/enums"
+	"github.com/rodrigorssa/codebank/infra"
 	"github.com/rodrigorssa/codebank/repository"
 )
 
 type UseCaseTransaction struct {
 	TransactionRepository repository.TransactionRepository
+	KafkaProducer         infra.KafkaProducer
 }
 
 func NewUseCaseTransaction(transactionRepository repository.TransactionRepository) UseCaseTransaction {
-	return UseCaseTransaction{transactionRepository}
+	return UseCaseTransaction{TransactionRepository: transactionRepository}
 }
 
 func (u UseCaseTransaction) ProcessTransaction(transactionDto dto.Transaction) (domain.Transaction, error) {
@@ -39,5 +43,21 @@ func (u UseCaseTransaction) ProcessTransaction(transactionDto dto.Transaction) (
 	t.Store = transactionDto.Store
 	t.Description = transactionDto.Description
 	t.CreatedAt = time.Now()
+
+	transactionDto.ID = t.ID
+	transactionDto.CreatedAt = t.CreatedAt
+
+	transactionJson, err := json.Marshal(transactionDto)
+
+	if err != nil {
+		return domain.Transaction{}, err
+	}
+
+	err = u.KafkaProducer.Publish(string(transactionJson), enums.PAYMENT_TOPIC)
+
+	if err != nil {
+		return domain.Transaction{}, err
+	}
+
 	return *t, nil
 }

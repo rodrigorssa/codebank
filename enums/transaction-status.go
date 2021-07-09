@@ -7,6 +7,7 @@ type TransactionStatusEnum struct {
 
 type TransactionErrorsEnum struct {
 	NOT_FOUND string
+	REJECTED  string
 }
 
 var TransactionStatus = TransactionStatusEnum{
@@ -16,4 +17,5 @@ var TransactionStatus = TransactionStatusEnum{
 
 var TransactionErrors = TransactionErrorsEnum{
 	NOT_FOUND: "Credit card does not exist!",
+	REJECTED:  "Transaction rejected by the bank",
 }
